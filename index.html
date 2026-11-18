@@ -53,6 +53,79 @@ const E={sq:['Squat Machine'],cp:['Chest Press Machine'],row:['Chest-Supported R
   hammer: ["Dumbbell Hammer Curl","db"],
   calf: ["Calf Raise"]
 };
+Object.assign(E, {
+  "smithFlat": [
+    "Smith Flat Bench Press",
+    "bar"
+  ],
+  "oneRow": [
+    "One-Arm Chest-Supported Machine Row",
+    "side"
+  ],
+  "inclineRow": [
+    "Incline-Bench Dumbbell Row",
+    "db"
+  ],
+  "oneInclineRow": [
+    "One-Arm Incline-Bench Dumbbell Row",
+    "dbside"
+  ],
+  "cableRow": [
+    "Seated Cable Row"
+  ],
+  "smithSquat": [
+    "Smith Squat",
+    "bar"
+  ],
+  "backSquat": [
+    "Barbell Back Squat",
+    "bar"
+  ],
+  "lyingCurl": [
+    "Lying Leg Curl"
+  ],
+  "singleCurl": [
+    "Single-Leg Seated Hamstring Curl",
+    "side"
+  ],
+  "cableFly": [
+    "Cable Fly"
+  ],
+  "dbRear": [
+    "Chest-Supported Dumbbell Rear-Delt Fly",
+    "db"
+  ],
+  "cableRear": [
+    "Cable Reverse Fly"
+  ],
+  "smithRdl": [
+    "Smith Romanian Deadlift",
+    "bar"
+  ],
+  "machineIncline": [
+    "Incline Chest Press Machine"
+  ],
+  "singleLeg": [
+    "Single-Leg Press",
+    "side"
+  ],
+  "neutralLat": [
+    "Neutral-Grip Lat Pulldown"
+  ],
+  "oneLat": [
+    "Single-Arm Cable Pulldown",
+    "side"
+  ],
+  "assistedPull": [
+    "Assisted Pull-Up"
+  ],
+  "machineLateral": [
+    "Lateral Raise Machine"
+  ],
+  "ropeHammer": [
+    "Rope Cable Hammer Curl"
+  ]
+});
 const P = {
   A: {
     name: 'Gym A', desc: 'Bench press + squat', place: 'Pangasinan · 50–65 min',
@@ -114,8 +187,8 @@ function last(id,unit){return data.sessions.filter(s=>s.id!==data.draft?.id).sor
 function makeEx(a,kind){let[id,count,lo,hi]=a,type=E[id][1]||'',unit=kind==='H'?'lb':'kg',prev=last(id,unit),sides=type.includes('side')?['L','R']:[''];return {id,count,lo,hi,unit,note:'',sets:sides.flatMap(side=>Array.from({length:count},(_,i)=>({side,weight:prev?.sets.find((s,j)=>s.side===side&&(j%count)===i)?.weight??(type==='body'?'0':''),reps:'',rir:'',done:false})))}}
 function start(k){data.draft={id:uid(),kind:k,date:day(),ex:P[k].ex.map(a=>makeEx(a,k)),saved:0};save();render();window.scrollTo(0,0)}
 function previous(e){let p=last(e.id,e.unit);if(!p)return 'First session — choose a comfortable starting load.';return `Last · ${esc(p.date)}: `+p.sets.filter(s=>s.done).map(s=>`${s.side?s.side+' ':''}${s.weight} ${p.unit} × ${s.reps}`).join(' · ')}
-function cue(e){let p=last(e.id,e.unit);if(!p)return '';let s=p.sets.filter(x=>x.done);if(s.length>=e.sets.length&&s.every(x=>+x.reps>=e.hi&&x.rir!==''&&+x.rir>=2)&&new Set(s.map(x=>+x.weight)).size===1&&E[e.id][1]!=='body')return '<div class="hint">Last session reached the top of this rep range with at least 2 RIR. Consider the smallest available weight increase if technique and comfort were good.</div>';return ''}
-function workout(){let d=data.draft,p=P[d.kind];return `<div class="row"><div><div class="eyebrow muted">${p.place}</div><h1>${p.name}</h1></div><span class="badge" id="count"></span></div><div class="session-meta"><label>Session date<input type="date" value="${d.date}" onchange="data.draft.date=this.value;save()"></label><div class="session-tips small muted"><strong>Target: ${d.kind==='C'?'2–3':'2'} RIR</strong><span>Tap ✓ after each completed set</span></div></div><div class="timer row"><span id="clock">Rest timer</span><div class="timer-controls"><button onclick="rest(90)">90s</button><button onclick="rest(150)">150s</button><button onclick="rest(0)" aria-label="Stop timer">×</button></div></div>${d.ex.map((e,i)=>`<section class="card"><div class="row"><span class="eyebrow muted">Exercise ${i+1}</span><span class="pill">${e.count} × ${e.lo===e.hi?e.lo:e.lo+'–'+e.hi}${E[e.id][1]?.includes('side')?' / side':''}</span></div><h3 style="margin-top:10px">${E[e.id][0]}</h3>${variationPicker(e,i,d.kind)}<div class="row small muted exercise-meta"><span>${E[e.id][1]?.includes('db')?'Weight per dumbbell':E[e.id][1]==='bar'?'Total weight including bar':E[e.id][1]==='body'?'Reps only · unweighted':'Use a consistent machine / load convention'}</span><select aria-label="Weight unit for ${E[e.id][0]}" onchange="setUnit(${i},this.value)"><option ${e.unit==='kg'?'selected':''}>kg</option><option ${e.unit==='lb'?'selected':''}>lb</option></select></div><p class="small muted">${previous(e)}</p>${exerciseTips[e.id] ? `<p class="small muted">${exerciseTips[e.id]}</p>` : ''}${cue(e)}${e.id==='yt'?'<p class="small muted">One set = 10 Y raises + 10 T raises. Log 10 after both; use 0 for unweighted.</p>':''}<div class="sethead"><span>Set</span><span>${E[e.id][1]==='body'?'Load':e.unit}</span><span>Reps</span><span>RIR*</span><span>Done</span></div>${e.sets.map((s,j)=>`${s.side&&j%e.count===0?`<div class="side">${s.side==='L'?'LEFT':'RIGHT'}</div>`:''}<div class="setrow ${s.done?'done':''}" id="set-${i}-${j}"><span class="small muted">${j%e.count+1}</span><input aria-label="${E[e.id][0]} set ${j+1} weight" type="number" inputmode="decimal" min="0" step="any" ${E[e.id][1]==='body'?'disabled':''} placeholder="—" value="${esc(s.weight)}" oninput="field(${i},${j},'weight',this.value)"><input aria-label="${E[e.id][0]} set ${j+1} reps" type="number" inputmode="numeric" min="1" step="1" placeholder="${e.lo===e.hi?e.lo:e.lo+'–'+e.hi}" title="Target ${e.lo===e.hi?e.lo:e.lo+'–'+e.hi} reps" value="${esc(s.reps)}" oninput="field(${i},${j},'reps',this.value)"><input aria-label="Repetitions in reserve" type="number" inputmode="numeric" min="0" max="10" placeholder="2" value="${esc(s.rir)}" oninput="field(${i},${j},'rir',this.value)"><button aria-label="Mark set ${j+1} complete for ${E[e.id][0]}" aria-pressed="${s.done}" onclick="toggle(${i},${j})">✓</button></div>`).join('')}<input class="note" aria-label="Notes for ${E[e.id][0]}" placeholder="Notes · machine setting, comfort…" value="${esc(e.note)}" oninput="data.draft.ex[${i}].note=this.value;save()"></section>`).join('')}<p class="small muted">*RIR = repetitions you could still do. Optional; enter it to enable progression cues. Blank sets remain unlogged.</p><button class="primary wide" onclick="finish()">Save workout</button><button class="link danger wide" onclick="discard()">Discard current draft</button>`}
+function cue(e){if(e.id==='assistedPull')return '<div class="hint">When every set reaches the top of the rep range with 2 reps in reserve, reduce assistance by the smallest available increment.</div>';let p=last(e.id,e.unit);if(!p)return '';let s=p.sets.filter(x=>x.done);if(s.length>=e.sets.length&&s.every(x=>+x.reps>=e.hi&&x.rir!==''&&+x.rir>=2)&&new Set(s.map(x=>+x.weight)).size===1&&E[e.id][1]!=='body')return '<div class="hint">Last session reached the top of this rep range with at least 2 RIR. Consider the smallest available weight increase if technique and comfort were good.</div>';return ''}
+function workout(){let d=data.draft,p=P[d.kind];return `<div class="row"><div><div class="eyebrow muted">${p.place}</div><h1>${p.name}</h1></div><span class="badge" id="count"></span></div><div class="session-meta"><label>Session date<input type="date" value="${d.date}" onchange="data.draft.date=this.value;save()"></label><div class="session-tips small muted"><strong>Target: ${d.kind==='C'?'2–3':'2'} RIR</strong><span>Tap ✓ after each completed set</span></div></div><div class="timer row"><span id="clock">Rest timer</span><div class="timer-controls"><button onclick="rest(90)">90s</button><button onclick="rest(150)">150s</button><button onclick="rest(0)" aria-label="Stop timer">×</button></div></div>${d.ex.map((e,i)=>`<section class="card"><div class="row"><span class="eyebrow muted">Exercise ${i+1}</span><span class="pill">${e.count} × ${e.lo===e.hi?e.lo:e.lo+'–'+e.hi}${E[e.id][1]?.includes('side')?' / side':''}</span></div><h3 style="margin-top:10px">${E[e.id][0]}</h3>${variationPicker(e,i,d.kind)}<div class="row small muted exercise-meta"><span>${E[e.id][1]?.includes('db')?'Weight per dumbbell':e.id==='assistedPull'?'Assistance weight · less assistance is harder':E[e.id][1]==='bar'?'Total weight including bar':E[e.id][1]==='body'?'Reps only · unweighted':'Use a consistent machine / load convention'}</span><select aria-label="Weight unit for ${E[e.id][0]}" onchange="setUnit(${i},this.value)"><option ${e.unit==='kg'?'selected':''}>kg</option><option ${e.unit==='lb'?'selected':''}>lb</option></select></div><p class="small muted">${previous(e)}</p>${exerciseTips[e.id] ? `<p class="small muted">${exerciseTips[e.id]}</p>` : ''}${cue(e)}${e.id==='yt'?'<p class="small muted">One set = 10 Y raises + 10 T raises. Log 10 after both; use 0 for unweighted.</p>':''}<div class="sethead"><span>Set</span><span>${E[e.id][1]==='body'?'Load':e.unit}</span><span>Reps</span><span>RIR*</span><span>Done</span></div>${e.sets.map((s,j)=>`${s.side&&j%e.count===0?`<div class="side">${s.side==='L'?'LEFT':'RIGHT'}</div>`:''}<div class="setrow ${s.done?'done':''}" id="set-${i}-${j}"><span class="small muted">${j%e.count+1}</span><input aria-label="${E[e.id][0]} set ${j+1} weight" type="number" inputmode="decimal" min="0" step="any" ${E[e.id][1]==='body'?'disabled':''} placeholder="—" value="${esc(s.weight)}" oninput="field(${i},${j},'weight',this.value)"><input aria-label="${E[e.id][0]} set ${j+1} reps" type="number" inputmode="numeric" min="1" step="1" placeholder="${e.lo===e.hi?e.lo:e.lo+'–'+e.hi}" title="Target ${e.lo===e.hi?e.lo:e.lo+'–'+e.hi} reps" value="${esc(s.reps)}" oninput="field(${i},${j},'reps',this.value)"><input aria-label="Repetitions in reserve" type="number" inputmode="numeric" min="0" max="10" placeholder="2" value="${esc(s.rir)}" oninput="field(${i},${j},'rir',this.value)"><button aria-label="Mark set ${j+1} complete for ${E[e.id][0]}" aria-pressed="${s.done}" onclick="toggle(${i},${j})">✓</button></div>`).join('')}<input class="note" aria-label="Notes for ${E[e.id][0]}" placeholder="Notes · machine setting, comfort…" value="${esc(e.note)}" oninput="data.draft.ex[${i}].note=this.value;save()"></section>`).join('')}<p class="small muted">*RIR = repetitions you could still do. Optional; enter it to enable progression cues. Blank sets remain unlogged.</p><button class="primary wide" onclick="finish()">Save workout</button><button class="link danger wide" onclick="discard()">Discard current draft</button>`}
 function field(i,j,k,v){let s=data.draft.ex[i].sets[j];s[k]=v;s.done=false;$('#set-'+i+'-'+j).classList.remove('done');$('#set-'+i+'-'+j+' button').setAttribute('aria-pressed','false');save();counts()}
 function validSet(s){return s.weight!==''&&Number.isFinite(+s.weight)&&+s.weight>=0&&s.reps!==''&&Number.isInteger(+s.reps)&&+s.reps>0&&(s.rir===''||(Number.isFinite(+s.rir)&&+s.rir>=0&&+s.rir<=10))}
 function toggle(i,j){let s=data.draft.ex[i].sets[j];if(!s.done&&!validSet(s)){toast('Enter a weight (0 for unweighted), whole-number reps, and RIR from 0–10.');return}s.done=!s.done;save();let r=$('#set-'+i+'-'+j);r.classList.toggle('done',s.done);r.querySelector('button').setAttribute('aria-pressed',s.done);counts()}
@@ -124,27 +197,50 @@ function setUnit(i,u){let e=data.draft.ex[i];if(e.sets.some(s=>s.weight!==''&&+s
 const exerciseTips = {
   bench: 'Use a spotter or rack safeties. Choose neutral-grip dumbbells if more comfortable.',
   hinge: 'Lower through the range you control with a stable trunk.',
+  oneRow: 'Complete the prescribed sets on each side. Keep your chest supported and avoid torso rotation.',
+  oneInclineRow: 'Complete the prescribed sets on each side with your chest supported.',
   fly: 'Open through a comfortable range and control the return.',
   yt: 'Use very light resistance or body weight.'
 };
-const variations = [
-  ['bench', 'neutral'],
-  ['lateral', 'cableRaise'],
-  ['cp', 'smith']
-];
+const variations = {
+  flatPress: ['bench', 'neutral', 'dbp', 'cp', 'smithFlat'],
+  row: ['row', 'oneRow', 'inclineRow', 'oneInclineRow', 'cableRow'],
+  squat: ['sq', 'smithSquat', 'backSquat'],
+  legCurl: ['curl', 'lyingCurl', 'singleCurl'],
+  fly: ['fly', 'cableFly'],
+  rearDelt: ['rear', 'dbRear', 'cableRear'],
+  hinge: ['hinge', 'rdl', 'smithRdl'],
+  inclinePress: ['incline', 'smith', 'machineIncline'],
+  legPress: ['leg', 'singleLeg', 'smithSquat'],
+  pulldown: ['lat', 'neutralLat', 'oneLat', 'assistedPull'],
+  lateral: ['lateral', 'cableRaise', 'machineLateral'],
+  hammer: ['hammer', 'ropeHammer'],
+  legacyPress: ['cp', 'smith']
+};
+function variationGroup(exercise, kind) {
+  if (exercise.variationGroup && variations[exercise.variationGroup]?.includes(exercise.id)) {
+    return exercise.variationGroup;
+  }
+  if (kind === 'B' && ['cp', 'smith'].includes(exercise.id)) return 'legacyPress';
+  return Object.keys(variations).find(key => variations[key].includes(exercise.id));
+}
 function variationPicker(exercise, index, kind) {
-  const options = variations.find(group => group.includes(exercise.id));
-  if (!options || (options.includes('smith') && kind !== 'B')) return '';
+  if (kind === 'H') return '';
+  const group = variationGroup(exercise, kind);
+  if (!group) return '';
   return '<label>Exercise variation<select onchange="variant(' + index + ', this.value)">' +
-    options.map(id => '<option value="' + id + '"' + (id === exercise.id ? ' selected' : '') + '>' + E[id][0] + '</option>').join('') +
+    variations[group].map(id => '<option value="' + id + '"' + (id === exercise.id ? ' selected' : '') + '>' + E[id][0] + '</option>').join('') +
     '</select></label>';
 }
 function variant(index, id) {
   const draft = data.draft;
   const old = draft.ex[index];
+  const group = variationGroup(old, draft.kind);
+  if (!group || !variations[group].includes(id)) return;
   if (old.sets.some(set => set.done || set.reps !== '' || set.weight !== '') &&
       !confirm('Replace the entries for this exercise?')) { render(); return; }
   draft.ex[index] = makeEx([id, old.count, old.lo, old.hi], draft.kind);
+  draft.ex[index].variationGroup = group;
   save();
   render();
 }
@@ -154,7 +250,7 @@ function edit(id){if(data.draft&&!confirm('Replace the current draft with this s
 function del(id){if(confirm('Delete this saved workout?')){data.sessions=data.sessions.filter(s=>s.id!==id);save();render()}}
 function rest(n){timerEnd=n?Date.now()+n*1000:0;tick()}
 function tick(){counts();if(!$('#clock'))return;if(timerEnd&&Date.now()>=timerEnd){timerEnd=0;toast('Rest complete.')}let s=Math.max(0,Math.ceil((timerEnd-Date.now())/1000));$('#clock').textContent=timerEnd?Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+' remaining':'Rest timer'}setInterval(tick,500);
-function progress(){let entries=data.sessions.slice().sort((a,b)=>a.date.localeCompare(b.date)||a.saved-b.saved).flatMap(s=>s.ex.filter(e=>e.id===filter&&e.sets.some(x=>x.done)).map(e=>({e,s})));let chart='';for(let unit of ['kg','lb']){let points=entries.filter(x=>x.e.unit===unit).map(x=>({date:x.s.date,v:Math.max(...x.e.sets.filter(s=>s.done).map(s=>+s.weight))}));if(!points.length)continue;let max=Math.max(...points.map(p=>p.v),1),coords=points.map((p,i)=>`${30+(points.length===1?150:i*300/(points.length-1))},${130-p.v/max*100}`);chart+=`<p class="small">Heaviest completed set · ${unit}</p><svg viewBox="0 0 360 165" role="img" aria-label="Heaviest weight by session in ${unit}"><path d="M30 20V135H335" stroke="#dce2d8" fill="none"/><polyline points="${coords.join(' ')}" fill="none" stroke="#173f36" stroke-width="3"/>${coords.map((c,i)=>`<circle cx="${c.split(',')[0]}" cy="${c.split(',')[1]}" r="4" fill="#173f36"><title>${points[i].date}: ${points[i].v} ${unit}</title></circle>`).join('')}<text x="30" y="158" font-size="11" fill="#687970">${points[0].date}</text><text x="330" y="158" text-anchor="end" font-size="11" fill="#687970">${points.at(-1).date}</text><text x="30" y="13" font-size="11" fill="#687970">Peak: ${Math.max(...points.map(p=>p.v))} ${unit}</text></svg>`}
+function progress(){let entries=data.sessions.slice().sort((a,b)=>a.date.localeCompare(b.date)||a.saved-b.saved).flatMap(s=>s.ex.filter(e=>e.id===filter&&e.sets.some(x=>x.done)).map(e=>({e,s})));let chart='';for(let unit of ['kg','lb']){let points=entries.filter(x=>x.e.unit===unit).map(x=>({date:x.s.date,v:Math.max(...x.e.sets.filter(s=>s.done).map(s=>+s.weight))}));if(!points.length)continue;let max=Math.max(...points.map(p=>p.v),1),coords=points.map((p,i)=>`${30+(points.length===1?150:i*300/(points.length-1))},${130-p.v/max*100}`);chart+=`<p class="small">${filter==='assistedPull'?'Most assistance in a completed set':'Heaviest completed set'} · ${unit}</p><svg viewBox="0 0 360 165" role="img" aria-label="${filter==='assistedPull'?'Assistance weight':'Heaviest weight'} by session in ${unit}"><path d="M30 20V135H335" stroke="#dce2d8" fill="none"/><polyline points="${coords.join(' ')}" fill="none" stroke="#173f36" stroke-width="3"/>${coords.map((c,i)=>`<circle cx="${c.split(',')[0]}" cy="${c.split(',')[1]}" r="4" fill="#173f36"><title>${points[i].date}: ${points[i].v} ${unit}</title></circle>`).join('')}<text x="30" y="158" font-size="11" fill="#687970">${points[0].date}</text><text x="330" y="158" text-anchor="end" font-size="11" fill="#687970">${points.at(-1).date}</text><text x="30" y="13" font-size="11" fill="#687970">Peak: ${Math.max(...points.map(p=>p.v))} ${unit}</text></svg>`}
 return `<div class="eyebrow muted">See your consistency</div><h1>Progress</h1><label>Exercise<select onchange="filter=this.value;render()">${Object.entries(E).map(([id,e])=>`<option value="${id}" ${filter===id?'selected':''}>${e[0]}</option>`).join('')}</select></label><section class="card">${chart||'<div class="empty">Your first completed session starts the story.</div>'}</section>${entries.slice().reverse().map(({e,s})=>`<div class="card"><div class="row"><strong>${s.date}</strong><span class="badge">${P[s.kind].name}</span></div>${e.sets.filter(x=>x.done).map(x=>`<div class="historyline">${x.side?x.side+' · ':''}${E[e.id][1]==='body'?'Unweighted':x.weight+' '+e.unit+(E[e.id][1]?.includes('db')?' / hand':'')} × <strong>${x.reps} reps</strong>${x.rir!==''?' · '+x.rir+' RIR':''}</div>`).join('')}${e.note?`<p class="small muted">${esc(e.note)}</p>`:''}</div>`).join('')}<h2 style="margin-top:28px">Workout history</h2>${data.sessions.slice().sort((a,b)=>b.date.localeCompare(a.date)||b.saved-a.saved).map(s=>`<div class="card"><div class="row"><div><strong>${P[s.kind].name}</strong><p class="small muted">${s.date} · ${s.ex.flatMap(e=>e.sets).filter(x=>x.done).length} sets</p></div><button onclick="edit('${s.id}')">Edit</button></div><button class="link danger" onclick="del('${s.id}')">Delete workout</button></div>`).join('')||'<p class="muted">No workouts saved yet.</p>'}`}
 function cardio(){return `<div class="eyebrow muted">Calasiao & Baguio</div><h1>Keep moving.</h1><div class="card"><h3>Weekly incline walking</h3><p class="small">Walk on two evenings for 35–45 minutes at a pace where you can speak in full sentences.</p><p class="small muted">Optional Baguio walk or hike: 45–60 minutes at comfortable to moderate intensity. Gradually work toward 150 moderate-equivalent minutes a week.</p></div><form class="card stack" onsubmit="addCardio(event)"><h3>Log aerobic activity</h3><div class="grid2"><label>Date<input required name="date" type="date" value="${day()}"></label><label>Minutes<input required name="minutes" type="number" inputmode="numeric" min="1" max="1440"></label></div><label>Activity<select name="activity"><option>Incline walking</option><option>Incline intervals</option><option>Outdoor walk / hike</option></select></label><div class="grid2"><label>Session RPE (1–10)<input required name="rpe" type="number" inputmode="numeric" min="1" max="10"></label><label>Incline % (optional)<input name="incline" type="number" inputmode="decimal" min="0" max="50" step="any"></label></div><label>Notes<input name="notes" placeholder="Speed, intervals, how it felt…"></label><button class="primary">Save activity</button></form><h2>Activity history</h2>${data.cardio.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(c=>`<div class="card"><strong>${esc(c.activity)}</strong><p class="small muted">${c.date} · ${c.minutes} min · RPE ${c.rpe}${c.incline!==''?' · '+c.incline+'% incline':''}</p>${c.notes?`<p class="small">${esc(c.notes)}</p>`:''}<button class="link danger" onclick="deleteCardio('${c.id}')">Delete activity</button></div>`).join('')||'<p class="muted">No aerobic activity logged yet.</p>'}`}
 function addCardio(ev){ev.preventDefault();let c=Object.fromEntries(new FormData(ev.target));c.id=uid();data.cardio.push(c);let ok=save();render();toast(ok?'Activity saved.':'Activity is in memory only. Export a backup in Settings.')}
